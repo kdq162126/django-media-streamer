@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang='en'>
+<head>
+    <meta charset='utf-8'>
+    <title>Cast HLS/M3U8</title>
+    <meta name='description' content='Cast live streams / IPTV to your chromecast.'>
+    <meta name='viewport' content='height=device-height, initial-scale=1.0'>
+    <meta name='mobile-web-app-capable' content='yes'>
+    <meta name='application-name' content='Cast HLS/IPTV video streams'>
+    <meta name='theme-color' content='#000000'>
+    <meta name='apple-mobile-web-app-capable' content='yes'>
+    <meta name='apple-mobile-web-app-status-bar-style' content='black-translucent'>
+    <meta name='apple-mobile-web-app-title' content='Cast HLS/IPTV video streams'>
+    <link rel='shortcut icon' href='./static/img/castIcon_128.png'>
+    <link rel='icon' href='./static/img/castIcon_128.png' type='image/x-icon'>
+    <script src='https://www.gstatic.com/cv/js/sender/v1/cast_sender.js'></script>
+    <script src='./static/js/player.chromecast.dev.js'></script>
+</head>
+<body>
+    <header>
+        <h1>Live stream / network media player for Chromecast</h1>
+    </header>
+    <div id='app'>
+        <h4>1. Launch Chromecast session</h4>
+        <button class="btn" onclick="launchApp()">Launch session</button>
+        <h4>2. Load network stream</h4>
+        Enter stream URL (or click to select 24h live stream from the channel list below):<br><br>
+        <input type="text" onkeyup="guessMimeType(this.value);" style="width:500px;" name="networkStreamUrl" value="" size="70" id="networkStreamUrl" placeholder="Network stream URL, eg. http://sub.domain.tld:port/path/file.ext"><br><br>
+        <!--Choose media type (cast-only, not required for browser playback):<br>-->
+        <select name="mediaMimeType" id="mediaMimeType" style="width:500px;color:#a1a1a1;border-color:#ccc;">
+            <option value="application/vnd.apple.mpegurl">application/vnd.apple.mpegurl (HTTP-Live-Streaming, m3u8 playlists)</option>
+            <option value="video/mp4">video/mp4 (raw mp4/mkv video files)</option>
+            <option value="audio/mpeg">audio/mpeg (raw mp3 audio files)</option>
+        </select>
+        <div id='iptv-wrapper'>
+            <h5>German IPTV - 24h live streams <a onclick='return toggleChannels();' href='#'><code>[Toggle channel list]</code></a></h5>
+            <div id='iptv-list' style='display:none;'>
+                <ul style='float:left;margin:0;margin-right:15px;min-width:300px;'>
+                    <li><a onclick='return setLivestream(0);' href='#'>[ARD Alpha]</a></li>
+                    <li><a onclick='return setLivestream(1);' href='#'>[Arte (DE)]</a></li>
+                    <li><a onclick='return setLivestream(3);' href='#'>[BR (Nord)]</a></li>
+                    <li><a onclick='return setLivestream(4);' href='#'>[BR (Sued)]</a></li>
+                    <li><a onclick='return setLivestream(5);' href='#'>[Das Erste]</a></li>
+                    <li><a onclick='return setLivestream(6);' href='#'>[Deutsche Welle]</a></li>
+                    <li><a onclick='return setLivestream(7);' href='#'>[HR]</a></li>
+                    <li><a onclick='return setLivestream(8);' href='#'>[KIKA]</a></li>
+                    <li><a onclick='return setLivestream(9);' href='#'>[MDR (Sachsen)]</a></li>
+                    <li><a onclick='return setLivestream(10);' href='#'>[MDR (Sachsen-Anhalt)]</a></li>
+                    <li><a onclick='return setLivestream(11);' href='#'>[MDR (Thueringen)]</a></li>
+                    <li><a onclick='return setLivestream(12);' href='#'>[NDR (Hamburg)]</a></li>
+                    <li><a onclick='return setLivestream(13);' href='#'>[NDR (Mecklenburg-Vorpommern)]</a></li>
+                    <li><a onclick='return setLivestream(14);' href='#'>[NDR (Niedersachsen)]</a></li>
+                    <li><a onclick='return setLivestream(15);' href='#'>[NDR (Schleswig-Holstein)]</a></li>
+                </ul>
+                <ul>
+                    <li><a onclick='return setLivestream(16);' href='#'>[ONE]</a></li>
+                    <li><a onclick='return setLivestream(17);' href='#'>[Phoenix]</a></li>
+                    <li><a onclick='return setLivestream(18);' href='#'>[Ran.de 1]</a></li>
+                    <li><a onclick='return setLivestream(19);' href='#'>[Ran.de 2]</a></li>
+                    <li><a onclick='return setLivestream(20);' href='#'>[RBB (Berlin)]</a></li>
+                    <li><a onclick='return setLivestream(21);' href='#'>[RBB (Brandenburg)]</a></li>
+                    <li><a onclick='return setLivestream(22);' href='#'>[SR]</a></li>
+                    <li><a onclick='return setLivestream(23);' href='#'>[SWR (Baden-Wuerttemberg)]</a></li>
+                    <li><a onclick='return setLivestream(24);' href='#'>[SWR (Rheinland-Pflanz)]</a></li>
+                    <li><a onclick='return setLivestream(25);' href='#'>[Tagesschau24]</a></li>
+                    <li><a onclick='return setLivestream(26);' href='#'>[WDR]</a></li>
+                    <li><a onclick='return setLivestream(27);' href='#'>[ZDF]</a></li>
+                    <li><a onclick='return setLivestream(28);' href='#'>[ZDF.info]</a></li>
+                    <li><a onclick='return setLivestream(29);' href='#'>[ZDF.neo]</a></li>
+                    <li><a onclick='return setLivestream(30);' href='#'>[3SAT]</a></li>
+                </ul>
+            </div>
+        </div>
+        <div style='display:none;' id='playlist-wrapper'>
+            <h5>Your playlist</h5>
+            <ul id='playlist'></ul>
+        </div>
+        <h4>3. Choose playback method</h4>
+        <button type="submit" name="loadCustomMedia" class="btn" onclick="loadCustomMedia();">Cast to device</button> or, alternatively,
+        <button type="submit" name="playCustomMedia" class="btn" onclick="playCustomMedia();">play in browser</button>
+        <h4>4. Control playback</h4>
+        <pre id="debugmessage">
+    Player state:    <span id="playerstate">IDLE</span>
+    Media position:  <span id="progress_tick">00:00:00</span>
+    Media duration:  <span id="duration">00:00:00</span>
+    Progress bar:    <input id="progress" type="range" min="1" max="100" value="0.01" step="0.01" onmouseup="seekMedia(this.value);" style="width:80%;">
+    Volume bar:      <input id="volumething" type="range" min="0" max="100" value="100" step="1" onmouseup="setReceiverVolume(this.value/100,false);">
+    Volume mute:     <a href="#" id="mutelink" onclick="setReceiverVolume(currentVolume, true); this.style.display = 'none'; document.getElementById('unmutelink').style.display = 'initial'; return false; ">Mute</a><a href="#" style="display:none;" id="unmutelink" onclick="setReceiverVolume(currentVolume, false);this.style.display = 'none';document.getElementById('mutelink').style.display = 'initial';return false; ">Unmute</a>
+    Control media:   <a href="#" onclick="playMedia(); return false; " id="playpauseresume" >Play</a></li> <a href="#" onclick="stopMedia(); return false; ">Unload media</a>
+    Control session: <a href="#" onclick="launchApp(); return false; ">Start session</a></li> <a href="#" onclick="stopApp(); return false; ">Exit session</a>
+        </pre>
+    </div>
+    <p><strong>NOTE</strong>: Chromecast follows the <a href="http://en.wikipedia.org/wiki/Same_origin_policy" target='_blank'>Same-origin policy</a>. Meaning: Chromecast will <b>not</b> play any network media files, unless the streaming server properly supports CORS for <strong>all</strong> requests (using <code>*</code>).<br></p>
+    <!-- Based on: https://pwnt.dk/tools/chromecast.php -->
+</body>
+</html>

@@ -1,1 +1,8 @@
 *.pyc
+
+venv/
+library/
+
+*.sqlite3
+
+*/var

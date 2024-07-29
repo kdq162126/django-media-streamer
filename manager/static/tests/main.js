@@ -1,5 +1,6 @@
 var session = null;
 
+// Initialize Cast API
 if (!chrome.cast || !chrome.cast.isAvailable) {
   setTimeout(initializeCastApi, 1000);
 }
@@ -17,8 +18,14 @@ function launchApp() {
 }
 
 function doChromecast() {
-  var videoSrc = document.getElementById('sample-video-src').getAttribute('src');
-  loadAndPlayMedia(videoSrc);
+  var videoElement = document.getElementById('sample-video-src');
+  var videoSrc = videoElement.querySelector('source').getAttribute('src')
+
+  if (videoSrc) {
+    loadAndPlayMedia(videoSrc);
+  } else {
+    console.error('Video source URL is missing.');
+  }
 }
 
 function getContentType(url) {
@@ -28,8 +35,7 @@ function getContentType(url) {
     var extension = parts.pop().toLowerCase();
     if (extension === 'mpd') {
       contentType = 'application/dash+xml';
-    }
-    else if (extension === 'm3u8') {
+    } else if (extension === 'm3u8') {
       contentType = 'application/x-mpegurl';
     }
   }
@@ -37,6 +43,11 @@ function getContentType(url) {
 }
 
 function loadAndPlayMedia(mediaURL) {
+  if (session === null) {
+    console.error('No active session found. Please launch the app first.');
+    return;
+  }
+
   var mediaInfo = new chrome.cast.media.MediaInfo(mediaURL);
   mediaInfo.metadata = new chrome.cast.media.GenericMediaMetadata();
   mediaInfo.metadata.metadataType = chrome.cast.media.MetadataType.GENERIC;
@@ -49,16 +60,40 @@ function loadAndPlayMedia(mediaURL) {
   request.autoplay = true;
   request.currentTime = 0;
 
-  session.loadMedia(request, onMediaSuccess, onMediaError);
+  session.loadMedia(request).then(onMediaSuccess).catch(onMediaError);
 }
 
 // Callbacks
-function onInitSuccess() {}
-function onError(e) {}
-function sessionListener(e) {session = e;}
-function receiverListener(e) {}
-function onMediaSuccess() {session.play();}
-function onMediaError(e) {}
-function onRequestSessionSuccess(e) {session = e;}
-function onLaunchError(e) {}
+function onInitSuccess() {
+  console.log('Cast API initialized successfully.');
+}
 
+function onError(e) {
+  console.error('Error:', e);
+}
+
+function sessionListener(e) {
+  session = e;
+  console.log('Session started:', session);
+}
+
+function receiverListener(e) {
+  console.log('Receiver listener event:', e);
+}
+
+function onMediaSuccess() {
+  console.log('Media loaded successfully.');
+}
+
+function onMediaError(e) {
+  console.error('Media loading error:', e);
+}
+
+function onRequestSessionSuccess(e) {
+  session = e;
+  console.log('Session established:', session);
+}
+
+function onLaunchError(e) {
+  console.error('Error launching app:', e);
+}

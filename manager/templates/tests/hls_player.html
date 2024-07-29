@@ -1,13 +1,24 @@
+<!DOCTYPE html>
 <html>
-  <head>
-    <script type="text/javascript" src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js"></script>
+<head>
+    <script src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
     <script type="text/javascript" src="/static/tests/main.js"></script>
-  </head>
-  <body>
+    <script>
+        window['__onGCastApiAvailable'] = function(isAvailable) {
+          if (isAvailable) {
+            initializeCastApi();
+          }
+        };
+    </script>
+    <title>Cast Example</title>
+</head>
+<body>
     <div>
-      <button onclick="launchApp()">Launch App!!</button>
-      <button onclick="doChromecast()">Chromecast!!</button>
-      <video id="sample-video-src" src="{{ media_url }}" autoplay></video>
-    </div>
-  </body>
+        <button onclick="launchApp()">Launch App</button>
+        <button onclick="doChromecast()">Chromecast</button>
+        <google-cast-launcher style="display: block; !important"></google-cast-launcher>
+        <video id="sample-video-src" width="352" height="198" controls>
+          <source src="{{ media_url }}" type="application/x-mpegURL">
+      </video>
+</body>
 </html>

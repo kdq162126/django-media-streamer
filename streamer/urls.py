@@ -1,6 +1,6 @@
-from django.conf.urls import url
-
+from django.urls import re_path
+from . import views  # Import views properly
 
 urlpatterns = [
-    url(r'(?P<stream_path>.*)/$', 'streamer.views.get_stream'),
+    re_path(r'(?P<stream_path>.*)/$', views.get_stream, name='get_stream'),
 ]

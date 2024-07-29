@@ -1,15 +1,12 @@
-from django.core.management.base import BaseCommand
-from django.core.management.base import CommandError
-
+from django.core.management.base import BaseCommand, CommandError
 import os
 import uuid
-import commands
+import subprocess  # Updated to use subprocess instead of commands
 
-
+# Define FFMPEG options
 FFMPEG_FPS_OPTS = '-r 30 -g 30'
 FFMPEG_PROFILE_OPTS = '-profile:v high -level:v 4.1'
-FFMPEG_CODEC_OPTS = '-codec:v libx264 -codec:a libfaac'
-
+FFMPEG_CODEC_OPTS = '-codec:v libx264 -codec:a aac'
 
 class Command(BaseCommand):
     stream_type = ''
@@ -17,9 +14,9 @@ class Command(BaseCommand):
     output_dir = ''
 
     def add_arguments(self, parser):
-        parser.add_argument('--stream-type', type=str)
-        parser.add_argument('--input-file', type=str)
-        parser.add_argument('--output-dir', type=str)
+        parser.add_argument('--stream-type', type=str, required=True)
+        parser.add_argument('--input-file', type=str, required=True)
+        parser.add_argument('--output-dir', type=str, required=True)
 
     def handle(self, *args, **options):
         self._parse_params(options)
@@ -28,8 +25,8 @@ class Command(BaseCommand):
             'dash': self.handle_dash,
             'hls': self.handle_hls
         }
-        if self.stream_type not in stream_type_handlers.keys():
-            raise CommandError('Streaming type must be dash or hls.')
+        if self.stream_type not in stream_type_handlers:
+            raise CommandError('Streaming type must be simple, dash, or hls.')
 
         hash_name = str(uuid.uuid4().hex)
         cache_dir = self._create_cache_dir(hash_name)
@@ -37,22 +34,18 @@ class Command(BaseCommand):
 
     # Stream handlers
     def handle_simple(self, cache_dir, hash_name):
-        output_dir = os.path.join(cache_dir, '%s.mp4' % hash_name)
-
+        output_dir = os.path.join(cache_dir, f'{hash_name}.mp4')
         self._ffmpeg_transcode(output_dir)
 
     def handle_dash(self, cache_dir, hash_name):
         temp_dir = self._create_temp_dir(hash_name)
-        temp_path = os.path.join(temp_dir, '%s.mp4' % hash_name)
-
+        temp_path = os.path.join(temp_dir, f'{hash_name}.mp4')
         self._ffmpeg_transcode(temp_path)
-
         self._mp4box_dash_segmentation(cache_dir, temp_path, hash_name)
 
     def handle_hls(self, cache_dir, hash_name):
-        m3u8_path = os.path.join(cache_dir, '%s.m3u8' % hash_name)
-        ts_path = os.path.join(cache_dir, '%s_%s.ts' % (hash_name, '%06d'))
-
+        m3u8_path = os.path.join(cache_dir, f'{hash_name}.m3u8')
+        ts_path = os.path.join(cache_dir, f'{hash_name}_%06d.ts')
         self._ffmpeg_transcode_and_hls_segmentation(m3u8_path, ts_path)
 
     # Common methods
@@ -74,26 +67,28 @@ class Command(BaseCommand):
         return media_cache_dir
 
     def _create_temp_dir(self, hash_name):
-        media_temp_dir = os.path.join(self.output_dir, '../temp/%s' % hash_name)
+        media_temp_dir = os.path.join(self.output_dir, f'../temp/{hash_name}')
         self._create_dir(media_temp_dir)
         return media_temp_dir
 
     def _ffmpeg_transcode(self, output_path):
-        ffmpeg_cmd = 'ffmpeg -i %s %s %s %s %s' % (
-            self.input_file, FFMPEG_FPS_OPTS, FFMPEG_PROFILE_OPTS, FFMPEG_CODEC_OPTS, output_path)
+        ffmpeg_cmd = f'ffmpeg -i {self.input_file} {FFMPEG_FPS_OPTS} {FFMPEG_PROFILE_OPTS} {FFMPEG_CODEC_OPTS} {output_path}'
         self.stdout.write(ffmpeg_cmd)
-        commands.getoutput(ffmpeg_cmd)
+        result = subprocess.run(ffmpeg_cmd, shell=True, capture_output=True, text=True)
+        if result.returncode != 0:
+            raise CommandError(f'Error during ffmpeg transcoding: {result.stderr}')
 
     def _mp4box_dash_segmentation(self, cache_dir, temp_path, hash_name):
         output_path = os.path.join(cache_dir, hash_name)
-        mp4box_cmd = 'MP4Box -dash 4000 -rap -frag-rap -profile live -url-template ' \
-                     '-segment-name %s_ -out %s %s' % ('%s', output_path[2:], temp_path)
+        mp4box_cmd = f'MP4Box -dash 4000 -rap -frag-rap -profile live -url-template -segment-name {hash_name}_ -out {output_path[2:]} {temp_path}'
         self.stdout.write(mp4box_cmd)
-        commands.getoutput(mp4box_cmd)
+        result = subprocess.run(mp4box_cmd, shell=True, capture_output=True, text=True)
+        if result.returncode != 0:
+            raise CommandError(f'Error during MP4Box DASH segmentation: {result.stderr}')
 
     def _ffmpeg_transcode_and_hls_segmentation(self, m3u8_path, ts_path):
-        ffmpeg_cmd = 'ffmpeg -i %s -map 0 %s %s -f ssegment -segment_list %s -segment_list_flags +live ' \
-                     '-segment_time 4 %s' % (self.input_file, FFMPEG_PROFILE_OPTS, FFMPEG_CODEC_OPTS, m3u8_path, ts_path)
+        ffmpeg_cmd = f'ffmpeg -i {self.input_file} -map 0 {FFMPEG_PROFILE_OPTS} {FFMPEG_CODEC_OPTS} -f ssegment -segment_list {m3u8_path} -segment_list_flags +live -segment_time 4 {ts_path}'
         self.stdout.write(ffmpeg_cmd)
-        commands.getoutput(ffmpeg_cmd)
-
+        result = subprocess.run(ffmpeg_cmd, shell=True, capture_output=True, text=True)
+        if result.returncode != 0:
+            raise CommandError(f'Error during ffmpeg transcoding and HLS segmentation: {result.stderr}')

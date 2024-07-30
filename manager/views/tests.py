@@ -17,6 +17,6 @@ def dash_stream(request):
 
 def hls_stream(request):
     context = {
-        'media_url': f'http://app.localhost:8000/streamer/ab1291c3fd9043dab94a3b9ffdfd5aad.m3u8'
+        'media_url': f'http://app.localhost:8000/streamer/e02cd5dbe2dc4885b7a89b5ce6d699fb.m3u8'
     }
     return render(request, 'tests/hls_player.html', context)

@@ -29,3 +29,7 @@ python manage.py preparemedia --stream-type dash --input-file ./library/video/sa
 ```
 
 *Above commands will carry out transcoding and segmentation of input media, then save them into output directory with hash name.*
+
+https://hlsjs.video-dev.org/demo/
+python manage.py preparemedia --stream-type hls --input-dir ./library/video --output-dir ./library/cache
+google-chrome --user-data-dir=”/var/tmp/Chrome” --disable-web-security
